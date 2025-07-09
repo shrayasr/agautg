@@ -127,6 +127,7 @@ async function getPricesAndSendTelegram(env) {
 
 		if (env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) {
 			await sendTelegramMessage(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID, message);
+			await sendTelegramMessage(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID_2, message);
 		}
 	} else {
 		console.log(`Ratio ${ratio.toFixed(3)} is within threshold (0.7 < ratio < 0.8). No alert sent.`);
