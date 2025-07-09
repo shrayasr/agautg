@@ -1,25 +1,48 @@
 async function fetchQuoteValue(symbol) {
 	try {
-		const url = `https://www.nseindia.com/get-quotes/equity?symbol=${symbol}`;
-		const response = await fetch(url, {
+		const yahooSymbol = `${symbol}.NS`;
+		const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}`;
+		
+		const controller = new AbortController();
+		const timeoutId = setTimeout(() => controller.abort(), 10000);
+		
+		const response = await fetch(yahooUrl, {
+			signal: controller.signal,
 			headers: {
-				'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+				'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+				'Accept': 'application/json'
 			}
 		});
+
+		clearTimeout(timeoutId);
 
 		if (!response.ok) {
 			return `ERR: HTTP ${response.status}`;
 		}
 
-		const html = await response.text();
-		const match = html.match(/<span[^>]*id="quoteLtp"[^>]*>([\d,\.]+)<\/span>/);
+		const data = await response.json();
 		
-		if (!match) {
-			return 'ERR: quoteLtp span not found';
+		if (data.chart && data.chart.result && data.chart.result[0]) {
+			const result = data.chart.result[0];
+			if (result.meta && result.meta.regularMarketPrice) {
+				return result.meta.regularMarketPrice.toString();
+			}
+			if (result.indicators && result.indicators.quote && result.indicators.quote[0]) {
+				const quotes = result.indicators.quote[0];
+				if (quotes.close && quotes.close.length > 0) {
+					const lastPrice = quotes.close[quotes.close.length - 1];
+					if (lastPrice !== null) {
+						return lastPrice.toString();
+					}
+				}
+			}
 		}
-
-		return match[1];
+		
+		return 'ERR: Price not found';
 	} catch (error) {
+		if (error.name === 'AbortError') {
+			return 'ERR: Request timeout';
+		}
 		return `ERR: ${error.message}`;
 	}
 }
@@ -30,14 +53,10 @@ export default {
 			return new Response('Not Found', { status: 404 });
 		}
 
-		console.log("Getting values");
-
 		const [auValue, agValue] = await Promise.all([
 			fetchQuoteValue('GOLDBEES'),
 			fetchQuoteValue('SILVERBEES')
 		]);
-
-		console.log("Got values");
 
 		const result = {
 			au: auValue,
