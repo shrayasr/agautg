@@ -11,9 +11,9 @@
 		"enabled": true
 	},
 	"account_id": "2f95c3cfde0988d4757d1f05be7c557a",
-	// "triggers": {
-	// 	"crons": ["0 9,15 * * 1-5"]
-	// }
+	"triggers": {
+		"crons": ["30 4 * * *"]
+	},
 	/**
 	 * Smart Placement
 	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
