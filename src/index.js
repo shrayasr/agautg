@@ -138,23 +138,20 @@ async function getPricesAndSendTelegram(env) {
 
 export default {
 	async fetch(request, env, ctx) {
-		const pathname = new URL(request.url).pathname;
+		const url = new URL(request.url);
+		const pathname = url.pathname;
 		
 		if (pathname === '/') {
+			const providedKey = url.searchParams.get('key');
+			
+			if (!providedKey || !env.API_KEY || providedKey !== env.API_KEY) {
+				return new Response('Unauthorized', { status: 401 });
+			}
+			
 			const result = await getPricesAndSendTelegram(env);
 			return new Response(JSON.stringify(result), {
 				headers: {
 					'Content-Type': 'application/json',
-					'Access-Control-Allow-Origin': '*'
-				}
-			});
-		}
-		
-		if (pathname === '/mycron') {
-			await getPricesAndSendTelegram(env);
-			return new Response('OK', {
-				headers: {
-					'Content-Type': 'text/plain',
 					'Access-Control-Allow-Origin': '*'
 				}
 			});
