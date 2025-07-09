@@ -128,7 +128,7 @@ export default {
 		
 		if (pathname === '/mycron') {
 			await getPricesAndSendTelegram(env);
-			return new Response('Telegram message sent!', {
+			return new Response('OK', {
 				headers: {
 					'Content-Type': 'text/plain',
 					'Access-Control-Allow-Origin': '*'
