@@ -30,10 +30,14 @@ export default {
 			return new Response('Not Found', { status: 404 });
 		}
 
+		console.log("Getting values");
+
 		const [auValue, agValue] = await Promise.all([
 			fetchQuoteValue('GOLDBEES'),
 			fetchQuoteValue('SILVERBEES')
 		]);
+
+		console.log("Got values");
 
 		const result = {
 			au: auValue,
