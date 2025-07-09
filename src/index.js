@@ -100,7 +100,17 @@ async function getPricesAndSendTelegram(env) {
 			minute: '2-digit'
 		});
 
-		const message = `<b>🚨 Gold/Silver Ratio Alert!</b>\n\n🥇 Gold (GOLDBEES): ₹${auValue}\n🥈 Silver (SILVERBEES): ₹${agValue}\n\n📊 <b>Ratio: ${ratio.toFixed(3)}</b>\n\n<i>Updated: ${timestamp}</i>`;
+		let signal = '';
+		let emoji = '';
+		if (ratio <= 0.7) {
+			signal = '🟢 BUY GOLD';
+			emoji = '🥇';
+		} else if (ratio >= 0.8) {
+			signal = '🟢 BUY SILVER';
+			emoji = '🥈';
+		}
+
+		const message = `<b>🚨 ${emoji} Trading Signal!</b>\n\n<b>${signal}</b>\n\n🥇 <a href="https://www.nseindia.com/get-quotes/equity?symbol=GOLDBEES">Gold (GOLDBEES)</a>: ₹${auValue}\n🥈 <a href="https://www.nseindia.com/get-quotes/equity?symbol=SILVERBEES">Silver (SILVERBEES)</a>: ₹${agValue}\n\n📊 <b>Ratio: ${ratio.toFixed(3)}</b>\n\n<i>Updated: ${timestamp}</i>`;
 
 		if (env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) {
 			await sendTelegramMessage(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID, message);
