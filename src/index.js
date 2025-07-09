@@ -1,20 +1,33 @@
-async function fetchQuoteValue(symbol) {
+async function fetchQuoteValue(symbol, retryCount = 0) {
 	try {
 		const yahooSymbol = `${symbol}.NS`;
 		const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}`;
 		
 		const controller = new AbortController();
-		const timeoutId = setTimeout(() => controller.abort(), 10000);
+		const timeoutId = setTimeout(() => controller.abort(), 15000);
+		
+		// Add delay between requests to avoid rate limiting
+		if (retryCount > 0) {
+			await new Promise(resolve => setTimeout(resolve, 2000 * retryCount));
+		}
 		
 		const response = await fetch(yahooUrl, {
 			signal: controller.signal,
 			headers: {
 				'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-				'Accept': 'application/json'
+				'Accept': 'application/json',
+				'Accept-Language': 'en-US,en;q=0.9',
+				'Cache-Control': 'no-cache',
+				'Pragma': 'no-cache'
 			}
 		});
 
 		clearTimeout(timeoutId);
+
+		if (response.status === 429 && retryCount < 3) {
+			console.log(`Rate limited for ${symbol}, retrying in ${2 * (retryCount + 1)} seconds...`);
+			return await fetchQuoteValue(symbol, retryCount + 1);
+		}
 
 		if (!response.ok) {
 			return `ERR: HTTP ${response.status}`;
@@ -75,10 +88,10 @@ async function sendTelegramMessage(botToken, chatId, message) {
 }
 
 async function getPricesAndSendTelegram(env) {
-	const [auValue, agValue] = await Promise.all([
-		fetchQuoteValue('GOLDBEES'),
-		fetchQuoteValue('SILVERBEES')
-	]);
+	// Fetch sequentially to avoid rate limiting
+	const auValue = await fetchQuoteValue('GOLDBEES');
+	await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
+	const agValue = await fetchQuoteValue('SILVERBEES');
 
 	// Calculate ratio (Gold / Silver)
 	const goldPrice = parseFloat(auValue.replace(/[^\d.]/g, ''));
