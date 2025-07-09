@@ -10,6 +10,7 @@
 	"observability": {
 		"enabled": true
 	},
+	"account_id": "2f95c3cfde0988d4757d1f05be7c557a",
 	// "triggers": {
 	// 	"crons": ["0 9,15 * * 1-5"]
 	// }
