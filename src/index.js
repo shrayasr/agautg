@@ -47,27 +47,85 @@ async function fetchQuoteValue(symbol) {
 	}
 }
 
-export default {
-	async fetch(request, env, ctx) {
-		if (new URL(request.url).pathname !== '/') {
-			return new Response('Not Found', { status: 404 });
-		}
-
-		const [auValue, agValue] = await Promise.all([
-			fetchQuoteValue('GOLDBEES'),
-			fetchQuoteValue('SILVERBEES')
-		]);
-
-		const result = {
-			au: auValue,
-			ag: agValue
-		};
-
-		return new Response(JSON.stringify(result), {
+async function sendTelegramMessage(botToken, chatId, message) {
+	try {
+		const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+		const response = await fetch(url, {
+			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
-				'Access-Control-Allow-Origin': '*'
-			}
+			},
+			body: JSON.stringify({
+				chat_id: chatId,
+				text: message,
+				parse_mode: 'HTML'
+			})
 		});
+
+		if (!response.ok) {
+			console.error('Telegram API error:', response.status, await response.text());
+			return false;
+		}
+
+		return true;
+	} catch (error) {
+		console.error('Error sending Telegram message:', error);
+		return false;
+	}
+}
+
+async function getPricesAndSendTelegram(env) {
+	const [auValue, agValue] = await Promise.all([
+		fetchQuoteValue('GOLDBEES'),
+		fetchQuoteValue('SILVERBEES')
+	]);
+
+	const timestamp = new Date().toLocaleString('en-IN', {
+		timeZone: 'Asia/Kolkata',
+		day: '2-digit',
+		month: '2-digit',
+		year: 'numeric',
+		hour: '2-digit',
+		minute: '2-digit'
+	});
+
+	const message = `<b>🥇 Gold & Silver Prices</b>\n\n🥇 Gold (GOLDBEES): ₹${auValue}\n🥈 Silver (SILVERBEES): ₹${agValue}\n\n<i>Updated: ${timestamp}</i>`;
+
+	if (env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) {
+		await sendTelegramMessage(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID, message);
+	}
+
+	return { au: auValue, ag: agValue };
+}
+
+export default {
+	async fetch(request, env, ctx) {
+		const pathname = new URL(request.url).pathname;
+		
+		if (pathname === '/') {
+			const result = await getPricesAndSendTelegram(env);
+			return new Response(JSON.stringify(result), {
+				headers: {
+					'Content-Type': 'application/json',
+					'Access-Control-Allow-Origin': '*'
+				}
+			});
+		}
+		
+		if (pathname === '/mycron') {
+			await getPricesAndSendTelegram(env);
+			return new Response('Telegram message sent!', {
+				headers: {
+					'Content-Type': 'text/plain',
+					'Access-Control-Allow-Origin': '*'
+				}
+			});
+		}
+
+		return new Response('Not Found', { status: 404 });
 	},
+
+	async scheduled(event, env, ctx) {
+		await getPricesAndSendTelegram(env);
+	}
 };
