@@ -1,3 +1,6 @@
+> [!NOTE]
+> This project is fully vibe coded with claude code
+
 # Gold & Silver Price Alert Worker
 
 A Cloudflare Worker that monitors gold and silver ETF prices from NSE India and sends trading signals via Telegram based on the gold/silver ratio.
