@@ -80,22 +80,36 @@ async function getPricesAndSendTelegram(env) {
 		fetchQuoteValue('SILVERBEES')
 	]);
 
-	const timestamp = new Date().toLocaleString('en-IN', {
-		timeZone: 'Asia/Kolkata',
-		day: '2-digit',
-		month: '2-digit',
-		year: 'numeric',
-		hour: '2-digit',
-		minute: '2-digit'
-	});
+	// Calculate ratio (Gold / Silver)
+	const goldPrice = parseFloat(auValue.replace(/[^\d.]/g, ''));
+	const silverPrice = parseFloat(agValue.replace(/[^\d.]/g, ''));
+	const ratio = goldPrice / silverPrice;
 
-	const message = `<b>🥇 Gold & Silver Prices</b>\n\n🥇 Gold (GOLDBEES): ₹${auValue}\n🥈 Silver (SILVERBEES): ₹${agValue}\n\n<i>Updated: ${timestamp}</i>`;
+	console.log(`Gold: ${auValue}, Silver: ${agValue}, Ratio: ${ratio.toFixed(3)}`);
 
-	if (env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) {
-		await sendTelegramMessage(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID, message);
+	// Check if ratio meets threshold conditions
+	const shouldSendAlert = ratio <= 0.7 || ratio >= 0.8;
+
+	if (shouldSendAlert) {
+		const timestamp = new Date().toLocaleString('en-IN', {
+			timeZone: 'Asia/Kolkata',
+			day: '2-digit',
+			month: '2-digit',
+			year: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit'
+		});
+
+		const message = `<b>🚨 Gold/Silver Ratio Alert!</b>\n\n🥇 Gold (GOLDBEES): ₹${auValue}\n🥈 Silver (SILVERBEES): ₹${agValue}\n\n📊 <b>Ratio: ${ratio.toFixed(3)}</b>\n\n<i>Updated: ${timestamp}</i>`;
+
+		if (env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) {
+			await sendTelegramMessage(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID, message);
+		}
+	} else {
+		console.log(`Ratio ${ratio.toFixed(3)} is within threshold (0.7 < ratio < 0.8). No alert sent.`);
 	}
 
-	return { au: auValue, ag: agValue };
+	return { au: auValue, ag: agValue, ratio: ratio.toFixed(3) };
 }
 
 export default {
